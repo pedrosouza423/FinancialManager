@@ -10,8 +10,8 @@ const schema = buildSchema(`
     id: ID!
     nome: String!
     email: String!
-    transacoesCriadas: [Transaction]       # Transações criadas por este usuário
-    tags: [Transaction]                    # Transações nas quais ele foi marcado
+    transacoesCriadas: [Transaction]
+    tags: [Transaction]
   }
 
   type Transaction {
@@ -21,33 +21,31 @@ const schema = buildSchema(`
     descricao: String
     imagem: String
     categoria: String
-    criador: User!                         # Dono/criador da transação
-    tags: [User]                           # Pessoas envolvidas no gasto
+    criador: User!
+    tags: [User]
   }
 
   # Consultas (Queries)
 
   type Query {
-    # Usuários
     usuarios: [User]
     usuarioPorId(id: ID!): User
     usuarioPorEmail(email: String!): User
 
-    # Transações
     transacoes: [Transaction]
     transacaoPorId(id: ID!): Transaction
     transacoesPorUsuario(userId: ID!): [Transaction]
+    transacoesPorTag(userId: ID!): [Transaction]
+    saldoUsuario(userId: ID!): Float         # ← ADICIONADA
   }
 
-  # Mutations (operações que alteram dados)
+  # Mutations
 
   type Mutation {
-    # Usuário
     criarUsuario(nome: String!, email: String!, senha: String!): User
     atualizarUsuario(id: ID!, nome: String, email: String, senha: String): User
     excluirUsuario(id: ID!): Boolean
 
-    # Transação
     criarTransacao(
       valor: Float!,
       tipo: String!,

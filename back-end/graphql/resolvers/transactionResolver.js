@@ -30,25 +30,57 @@ const transactionResolvers = {
     });
   },
 
-  // Mutation: Criar transação com verificação de saldo
-  criarTransacao: async ({ valor, tipo, descricao, imagem, categoria, userId, tagIds }) => {
+  transacoesPorTag: async ({ userId }) => {
     try {
-      // Buscar transações do usuário para calcular saldo
+      const usuario = await User.findByPk(userId);
+      if (!usuario) return [];
+
+      const transacoes = await usuario.getTags({
+        include: [
+          { model: User, as: 'criador', attributes: ['id', 'nome'] },
+          { model: User, as: 'tags', attributes: ['id', 'nome'] }
+        ]
+      });
+
+      return transacoes;
+    } catch (error) {
+      console.error('Erro ao buscar transações por tag:', error.message);
+      return [];
+    }
+  },
+
+  saldoUsuario: async ({ userId }) => {
+    try {
       const transacoes = await Transaction.findAll({ where: { userId } });
 
-      // Calcular saldo atual
       let saldo = 0;
       transacoes.forEach(t => {
         if (t.tipo === 'entrada') saldo += t.valor;
         if (t.tipo === 'saida') saldo -= t.valor;
       });
 
-      // Verificar se há saldo suficiente
+      return saldo;
+    } catch (error) {
+      console.error('Erro ao calcular saldo:', error.message);
+      throw new Error('Erro ao calcular saldo');
+    }
+  },
+
+  // Mutations
+  criarTransacao: async ({ valor, tipo, descricao, imagem, categoria, userId, tagIds }) => {
+    try {
+      const transacoes = await Transaction.findAll({ where: { userId } });
+
+      let saldo = 0;
+      transacoes.forEach(t => {
+        if (t.tipo === 'entrada') saldo += t.valor;
+        if (t.tipo === 'saida') saldo -= t.valor;
+      });
+
       if (tipo === 'saida' && valor > saldo) {
         throw new Error('Saldo insuficiente para realizar esta transação.');
       }
 
-      // Criar transação
       const transacao = await Transaction.create({
         valor,
         tipo,
@@ -58,13 +90,11 @@ const transactionResolvers = {
         userId
       });
 
-      // Associar tags, se houver
       if (tagIds && tagIds.length > 0) {
         const usuarios = await User.findAll({ where: { id: tagIds } });
         await transacao.setTags(usuarios);
       }
 
-      // Retornar com dados populados
       return await Transaction.findByPk(transacao.id, {
         include: [
           { model: User, as: 'criador', attributes: ['id', 'nome'] },
@@ -77,7 +107,6 @@ const transactionResolvers = {
     }
   },
 
-  // Mutation: Atualizar transação (incluindo tags)
   atualizarTransacao: async ({ id, valor, tipo, descricao, imagem, categoria, tagIds }) => {
     try {
       const transacao = await Transaction.findByPk(id);
@@ -108,7 +137,6 @@ const transactionResolvers = {
     }
   },
 
-  // Mutation: Excluir transação
   excluirTransacao: async ({ id }) => {
     try {
       const transacao = await Transaction.findByPk(id);
@@ -121,7 +149,6 @@ const transactionResolvers = {
     }
   },
 
-  // Resolvedores de campo opcionais (não são obrigatórios se já estão incluídos nas queries)
   Transaction: {
     criador: async (transacao) => {
       return await User.findByPk(transacao.userId);
