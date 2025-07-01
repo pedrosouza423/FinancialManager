@@ -1,10 +1,7 @@
 const { buildSchema } = require('graphql');
 const { resolvers } = require('./resolvers/rootResolver');
 
-// Definição do schema GraphQL
 const schema = buildSchema(`
-
-  # Tipos principais
 
   type User {
     id: ID!
@@ -25,26 +22,29 @@ const schema = buildSchema(`
     tags: [User]
   }
 
-  # Consultas (Queries)
+  type AuthPayload {
+    token: String!
+    usuario: User!
+  }
 
   type Query {
     usuarios: [User]
     usuarioPorId(id: ID!): User
     usuarioPorEmail(email: String!): User
-
     transacoes: [Transaction]
     transacaoPorId(id: ID!): Transaction
     transacoesPorUsuario(userId: ID!): [Transaction]
     transacoesPorTag(userId: ID!): [Transaction]
-    saldoUsuario(userId: ID!): Float         # ← ADICIONADA
+    saldoUsuario(userId: ID!): Float
+    me: User
   }
-
-  # Mutations
 
   type Mutation {
     criarUsuario(nome: String!, email: String!, senha: String!): User
     atualizarUsuario(id: ID!, nome: String, email: String, senha: String): User
     excluirUsuario(id: ID!): Boolean
+
+    login(email: String!, senha: String!): AuthPayload
 
     criarTransacao(
       valor: Float!,
