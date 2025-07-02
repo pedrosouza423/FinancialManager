@@ -49,7 +49,6 @@ const transactionResolvers = {
     }
   },
 
-  // 👇 Aqui é o ajuste importante: saldo do GRUPO (coletivo)
   saldoUsuario: async () => {
     try {
       const transacoes = await Transaction.findAll();
@@ -67,11 +66,14 @@ const transactionResolvers = {
     }
   },
 
-  // Mutations
-  criarTransacao: async ({ valor, tipo, descricao, imagem, categoria, userId, tagIds }) => {
+  criarTransacao: async ({ valor, tipo, descricao, imagem, categoria, data, userId, tagIds }) => {
     try {
-      const transacoes = await Transaction.findAll();
+      // 🔒 Verifica se o criador da transação existe
+      const usuario = await User.findByPk(userId);
+      if (!usuario) throw new Error('Usuário criador não encontrado.');
 
+      // Verifica saldo para saídas
+      const transacoes = await Transaction.findAll();
       let saldo = 0;
       transacoes.forEach(t => {
         if (t.tipo === 'entrada') saldo += t.valor;
@@ -82,12 +84,14 @@ const transactionResolvers = {
         throw new Error('Saldo insuficiente para realizar esta transação.');
       }
 
+      // Cria a transação
       const transacao = await Transaction.create({
         valor,
         tipo,
         descricao,
         imagem,
         categoria,
+        data,
         userId
       });
 
@@ -108,7 +112,7 @@ const transactionResolvers = {
     }
   },
 
-  atualizarTransacao: async ({ id, valor, tipo, descricao, imagem, categoria, tagIds }) => {
+  atualizarTransacao: async ({ id, valor, tipo, descricao, imagem, categoria, data, tagIds }) => {
     try {
       const transacao = await Transaction.findByPk(id);
       if (!transacao) return null;
@@ -118,6 +122,7 @@ const transactionResolvers = {
       if (descricao !== undefined) transacao.descricao = descricao;
       if (imagem !== undefined) transacao.imagem = imagem;
       if (categoria !== undefined) transacao.categoria = categoria;
+      if (data !== undefined) transacao.data = data;
 
       await transacao.save();
 
@@ -152,10 +157,14 @@ const transactionResolvers = {
 
   Transaction: {
     criador: async (transacao) => {
+      if (!transacao.userId) return null;
       return await User.findByPk(transacao.userId);
     },
     tags: async (transacao) => {
       return await transacao.getTags();
+    },
+    data: (transacao) => {
+      return transacao.data?.toISOString().split('T')[0]; // 🔧 Aqui está a formatação
     }
   }
 };

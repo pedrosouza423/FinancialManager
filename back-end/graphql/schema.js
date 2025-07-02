@@ -17,6 +17,7 @@ const schema = buildSchema(`
     tipo: String!
     descricao: String
     imagem: String
+    data: String       # 👈 Adicionado aqui
     categoria: String
     criador: User!
     tags: [User]
@@ -35,10 +36,7 @@ const schema = buildSchema(`
     transacaoPorId(id: ID!): Transaction
     transacoesPorUsuario(userId: ID!): [Transaction]
     transacoesPorTag(userId: ID!): [Transaction]
-    
-    # 🔧 Atualizado para não precisar de userId
     saldoUsuario: Float
-
     me: User
   }
 
@@ -55,6 +53,7 @@ const schema = buildSchema(`
       descricao: String,
       imagem: String,
       categoria: String,
+      data: String,           # 👈 Aqui também
       userId: ID!,
       tagIds: [ID!]
     ): Transaction
@@ -66,6 +65,7 @@ const schema = buildSchema(`
       descricao: String,
       imagem: String,
       categoria: String,
+      data: String,           # 👈 Aqui também
       tagIds: [ID!]
     ): Transaction
 

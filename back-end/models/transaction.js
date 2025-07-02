@@ -4,10 +4,13 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Transaction extends Model {
     static associate(models) {
-      // Uma transação é criada por um único usuário
-      Transaction.belongsTo(models.User, { foreignKey: 'userId', as: 'criador' });
+      // Quem criou a transação
+      Transaction.belongsTo(models.User, {
+        foreignKey: 'userId',
+        as: 'criador'
+      });
 
-      // Uma transação pode ter múltiplos usuários marcados como "tags"
+      // Tags (muitos para muitos)
       Transaction.belongsToMany(models.User, {
         through: 'TransactionTags',
         as: 'tags',
@@ -18,21 +21,13 @@ module.exports = (sequelize, DataTypes) => {
   }
 
   Transaction.init({
-    valor: {
-      type: DataTypes.FLOAT,
-      allowNull: false
-    },
-    tipo: {
-      type: DataTypes.ENUM('entrada', 'saida'),
-      allowNull: false
-    },
+    valor: DataTypes.FLOAT,
+    tipo: DataTypes.STRING,
     descricao: DataTypes.STRING,
     imagem: DataTypes.STRING,
     categoria: DataTypes.STRING,
-    userId: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    }
+    data: DataTypes.DATE,
+    userId: DataTypes.INTEGER
   }, {
     sequelize,
     modelName: 'Transaction',
