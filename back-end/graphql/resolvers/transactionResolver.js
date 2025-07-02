@@ -49,9 +49,10 @@ const transactionResolvers = {
     }
   },
 
-  saldoUsuario: async ({ userId }) => {
+  // 👇 Aqui é o ajuste importante: saldo do GRUPO (coletivo)
+  saldoUsuario: async () => {
     try {
-      const transacoes = await Transaction.findAll({ where: { userId } });
+      const transacoes = await Transaction.findAll();
 
       let saldo = 0;
       transacoes.forEach(t => {
@@ -69,7 +70,7 @@ const transactionResolvers = {
   // Mutations
   criarTransacao: async ({ valor, tipo, descricao, imagem, categoria, userId, tagIds }) => {
     try {
-      const transacoes = await Transaction.findAll({ where: { userId } });
+      const transacoes = await Transaction.findAll();
 
       let saldo = 0;
       transacoes.forEach(t => {
