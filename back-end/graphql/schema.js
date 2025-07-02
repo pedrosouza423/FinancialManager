@@ -35,7 +35,10 @@ const schema = buildSchema(`
     transacaoPorId(id: ID!): Transaction
     transacoesPorUsuario(userId: ID!): [Transaction]
     transacoesPorTag(userId: ID!): [Transaction]
-    saldoUsuario(userId: ID!): Float
+    
+    # 🔧 Atualizado para não precisar de userId
+    saldoUsuario: Float
+
     me: User
   }
 

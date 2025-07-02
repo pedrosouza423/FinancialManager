@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,36 +12,63 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
+import api from "@/lib/api"
 
-const mockTransacoes = [
-  { categoria: "Mercado", valor: 137.23 },
-  { categoria: "Outros", valor: 250 },
-  { categoria: "Casa", valor: 30 },
-]
+type Transacao = {
+  valor: number
+  categoria: string
+  tipo: string
+}
 
-const cores = ["#3b82f6", "#ef4444", "#10b981"]
+const cores = ["#3b82f6", "#ef4444", "#10b981", "#eab308", "#8b5cf6"]
 
 export default function Dashboard() {
   const router = useRouter()
+  const [transacoes, setTransacoes] = useState<Transacao[]>([])
+  const [saldo, setSaldo] = useState(0)
 
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) {
       router.push("/login")
+      return
     }
-  }, [router])
 
-  const total = mockTransacoes.reduce((acc, t) => acc + t.valor, 0)
+    async function fetchData() {
+      try {
+        const [transacoesRes, saldoRes] = await Promise.all([
+          api.post("", {
+            query: `query {
+              transacoes {
+                valor
+                categoria
+                tipo
+              }
+            }`,
+          }),
+          api.post("", {
+            query: `query {
+              saldoUsuario
+            }`,
+          }),
+        ])
+
+        setTransacoes(transacoesRes.data.data.transacoes)
+        setSaldo(saldoRes.data.data.saldoUsuario)
+      } catch (err) {
+        console.error("Erro ao buscar dados do dashboard:", err)
+        router.push("/login")
+      }
+    }
+
+    fetchData()
+  }, [router])
 
   return (
     <div className="p-4 space-y-4 max-w-3xl mx-auto">
       <h1 className="text-xl font-bold text-center">Total da Semana</h1>
-      <p
-        className={`text-center text-2xl font-semibold ${
-          total > 0 ? "text-green-600" : "text-red-600"
-        }`}
-      >
-        {total.toLocaleString("pt-BR", {
+      <p className={`text-center text-2xl font-semibold ${saldo > 0 ? "text-green-600" : "text-red-600"}`}>
+        {saldo.toLocaleString("pt-BR", {
           style: "currency",
           currency: "BRL",
         })}
@@ -59,14 +86,12 @@ export default function Dashboard() {
 
       <Card>
         <CardContent className="p-4">
-          <h2 className="text-lg font-medium mb-4">
-            Distribuição por categoria
-          </h2>
+          <h2 className="text-lg font-medium mb-4">Distribuição por categoria</h2>
           <div className="h-60">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={mockTransacoes}
+                  data={transacoes}
                   dataKey="valor"
                   nameKey="categoria"
                   cx="50%"
@@ -74,14 +99,11 @@ export default function Dashboard() {
                   outerRadius={80}
                   label
                 >
-                  {mockTransacoes.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={cores[index % cores.length]}
-                    />
+                  {transacoes.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={cores[index % cores.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => `R$ ${value}`} />
+                <Tooltip formatter={(value: number) => `R$ ${value}`} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -89,11 +111,14 @@ export default function Dashboard() {
       </Card>
 
       <div className="space-y-2">
-        {mockTransacoes.map((item, idx) => (
+        {transacoes.map((item, idx) => (
           <Card key={idx}>
             <CardContent className="flex justify-between p-4">
-              <span>{item.categoria}</span>
-              <span className="font-medium">
+              <div>
+                <span className="block font-medium">{item.categoria}</span>
+                <span className="text-sm text-muted-foreground">{item.tipo === "entrada" ? "Receita" : "Despesa"}</span>
+              </div>
+              <span className={`font-semibold ${item.tipo === "entrada" ? "text-green-600" : "text-red-600"}`}>
                 {item.valor.toLocaleString("pt-BR", {
                   style: "currency",
                   currency: "BRL",
